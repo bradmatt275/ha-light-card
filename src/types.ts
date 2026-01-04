@@ -11,6 +11,8 @@ export interface LightsRoomCardConfig {
   type: string;
   title?: string;
   show_total_power?: boolean;
+  power_entities?: string[];        // Custom entities for total power calculation
+  columns?: number;                 // Number of columns (1-4, default: 1)
   rooms: RoomConfig[];
 }
 
@@ -20,6 +22,7 @@ export interface LightsRoomCardConfig {
 export interface RoomConfig {
   name: string;
   collapsed?: boolean;
+  column?: number;                  // Which column to place this room in (1-based)
   lights: LightConfig[];
 }
 
@@ -63,6 +66,7 @@ export interface SceneInfo {
   entity_id: string;                 // scene.living_room_relax
   name: string;                      // "Relax" (friendly name)
   color?: string;                    // Hex color if extractable (e.g., "#FF9500")
+  entity_picture?: string;           // URL to scene preview image (for color extraction)
   is_active?: boolean;               // Whether this scene appears to be active
 }
 

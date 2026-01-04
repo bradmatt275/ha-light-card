@@ -107,6 +107,55 @@ export const cardStyles = css`
     flex-direction: column;
   }
 
+  /* Multi-column layout */
+  .rooms-container.columns-2,
+  .rooms-container.columns-3,
+  .rooms-container.columns-4 {
+    display: grid;
+    gap: var(--spacing-lg);
+  }
+
+  .rooms-container.columns-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .rooms-container.columns-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .rooms-container.columns-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* Column containers */
+  .column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  /* Responsive: wrap to fewer columns on smaller screens */
+  @media (max-width: 1200px) {
+    .rooms-container.columns-4 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .rooms-container.columns-3,
+    .rooms-container.columns-4 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 600px) {
+    .rooms-container.columns-2,
+    .rooms-container.columns-3,
+    .rooms-container.columns-4 {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .no-rooms-message {
     text-align: center;
     color: var(--text-secondary);
@@ -442,11 +491,23 @@ export const sceneChipStyles = css`
   }
 
   .scene-color-swatch {
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.2);
     flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .scene-color-swatch .scene-picture {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    position: absolute;
+    top: 0;
+    left: 0;
   }
 
   .scene-chip-name {
@@ -578,6 +639,62 @@ export const editorStyles = css`
   mwc-icon-button {
     --mdc-icon-button-size: 36px;
     --mdc-icon-size: 20px;
+  }
+
+  /* Column selector styles */
+  .columns-selector,
+  .column-assignment {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .columns-selector label,
+  .column-assignment label {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .column-buttons {
+    display: flex;
+    gap: var(--spacing-xs);
+  }
+
+  .column-button {
+    min-width: 48px;
+    --mdc-theme-primary: var(--text-secondary);
+  }
+
+  .column-button.active {
+    --mdc-theme-primary: var(--accent-color);
+    background: rgba(var(--accent-color-rgb, 3, 169, 244), 0.1);
+  }
+
+  /* Power entities styles */
+  .power-entities-info {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .power-entity-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .power-entity-row ha-entity-picker {
+    flex: 1;
+  }
+
+  .no-lights-message,
+  .no-rooms-message {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: var(--spacing-md);
+    text-align: center;
   }
 `;
 

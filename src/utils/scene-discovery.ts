@@ -24,6 +24,63 @@ export function extractSceneColor(hass: HomeAssistant, sceneEntityId: string): s
 }
 
 /**
+ * Extract just the scene name without the area/device prefix
+ * Hue scenes often have format "Area Name Scene Name" or "Device Name Scene Name"
+ */
+function extractSceneName(fullName: string, areaId: string | null): string {
+  if (!fullName) return fullName;
+
+  // Common patterns to remove:
+  // - "Master Bedroom Amethyst valley" -> "Amethyst valley"
+  // - "Living Room Relax" -> "Relax"
+  
+  // Try to find and remove area name prefix (case-insensitive)
+  if (areaId) {
+    // Convert area_id format (e.g., "master_bedroom") to possible display formats
+    const areaVariants = [
+      areaId.replace(/_/g, ' '),  // "master bedroom"
+      areaId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),  // "Master Bedroom"
+    ];
+
+    for (const areaName of areaVariants) {
+      // Check if the name starts with the area name (case-insensitive)
+      if (fullName.toLowerCase().startsWith(areaName.toLowerCase())) {
+        const remainder = fullName.slice(areaName.length).trim();
+        if (remainder) return remainder;
+      }
+    }
+  }
+
+  // Also try to detect common patterns like "DeviceName SceneName"
+  // If the name has multiple words and the first part matches a known device pattern, strip it
+  const words = fullName.split(' ');
+  if (words.length > 1) {
+    // Check for common Hue scene name patterns at the end
+    const knownSceneNames = [
+      'relax', 'energize', 'concentrate', 'read', 'dimmed', 'nightlight', 'bright',
+      'tropical twilight', 'arctic aurora', 'spring blossom', 'savanna sunset',
+      'tokyo', 'galaxy', 'nebula', 'sunset', 'forest', 'ocean',
+      'amethyst valley', 'baby\'s breath', 'frosty dawn', 'still waters',
+      'soho', 'chinatown', 'golden pond', 'honolulu', 'fairfax', 'hal',
+      'tyrell', 'painted sky', 'rolling hills', 'starlight', 'moonlight',
+      'lake placid', 'lake mist', 'disturbia', 'ibiza', 'miami', 'cancun',
+      'rio', 'palm beach', 'motown', 'memphis', 'hampton', 'bossa nova'
+    ];
+
+    const lowerName = fullName.toLowerCase();
+    for (const sceneName of knownSceneNames) {
+      if (lowerName.endsWith(sceneName)) {
+        // Extract just the scene name portion with proper casing
+        const index = lowerName.lastIndexOf(sceneName);
+        return fullName.slice(index);
+      }
+    }
+  }
+
+  return fullName;
+}
+
+/**
  * Discover scenes for a light entity using the search/related API
  */
 export async function discoverScenesForLight(
@@ -42,10 +99,16 @@ export async function discoverScenesForLight(
   // Convert to SceneInfo objects
   return sceneEntityIds.map((sceneId) => {
     const sceneState = hass.states[sceneId] as HassEntity | undefined;
+    const fullName = sceneState?.attributes?.friendly_name ?? sceneId.split('.')[1] ?? sceneId;
+    
+    // Get entity_picture for Hue scenes (used for color extraction)
+    const entityPicture = sceneState?.attributes?.entity_picture as string | undefined;
+    
     return {
       entity_id: sceneId,
-      name: sceneState?.attributes?.friendly_name ?? sceneId.split('.')[1] ?? sceneId,
+      name: extractSceneName(fullName, areaId),
       color: extractSceneColor(hass, sceneId) ?? undefined,
+      entity_picture: entityPicture,
       is_active: false,
     };
   });

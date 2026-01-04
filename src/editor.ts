@@ -312,6 +312,26 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
                   @input=${(e: Event) => this._roomValueChanged(e, roomIndex, 'name')}
                 ></ha-textfield>
 
+                ${(this._config.columns ?? 1) > 1
+                  ? html`
+                      <div class="column-assignment">
+                        <label>Assign to Column</label>
+                        <div class="column-buttons">
+                          ${Array.from({ length: this._config.columns ?? 1 }, (_, i) => i + 1).map(
+                            (num) => html`
+                              <mwc-button
+                                class="column-button ${(room.column ?? 1) === num ? 'active' : ''}"
+                                @click=${() => this._setRoomColumn(roomIndex, num)}
+                              >
+                                ${num}
+                              </mwc-button>
+                            `
+                          )}
+                        </div>
+                      </div>
+                    `
+                  : nothing}
+
                 <ha-formfield label="Start collapsed">
                   <ha-switch
                     .checked=${room.collapsed ?? false}
@@ -346,6 +366,8 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
       return html``;
     }
 
+    const columns = this._config.columns ?? 1;
+
     return html`
       <div class="card-config">
         <ha-textfield
@@ -364,6 +386,43 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
         </ha-formfield>
 
         <div class="section-header">
+          <span class="section-title">LAYOUT</span>
+        </div>
+
+        <div class="columns-selector">
+          <label>Number of Columns</label>
+          <div class="column-buttons">
+            ${[1, 2, 3, 4].map(
+              (num) => html`
+                <mwc-button
+                  class="column-button ${columns === num ? 'active' : ''}"
+                  @click=${() => this._setColumns(num)}
+                >
+                  ${num}
+                </mwc-button>
+              `
+            )}
+          </div>
+        </div>
+
+        <div class="section-header">
+          <span class="section-title">POWER ENTITIES (Optional)</span>
+        </div>
+
+        <div class="power-entities-info">
+          Custom entities for total power calculation. Leave empty to sum individual light power values.
+        </div>
+
+        ${(this._config.power_entities ?? []).map((entityId, index) =>
+          this._renderPowerEntityEditor(entityId, index)
+        )}
+
+        <mwc-button @click=${this._addPowerEntity}>
+          <ha-icon icon=${ICONS.add}></ha-icon>
+          Add Power Entity
+        </mwc-button>
+
+        <div class="section-header">
           <span class="section-title">ROOMS</span>
           <mwc-button @click=${this._addRoom}>
             <ha-icon icon=${ICONS.add}></ha-icon>
@@ -380,6 +439,96 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
           : nothing}
       </div>
     `;
+  }
+
+  /**
+   * Set the number of columns
+   */
+  private _setColumns(num: number): void {
+    this._config = {
+      ...this._config,
+      columns: num,
+    };
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Set the column assignment for a room
+   */
+  private _setRoomColumn(roomIndex: number, column: number): void {
+    const rooms = [...(this._config.rooms ?? [])];
+    rooms[roomIndex] = {
+      ...rooms[roomIndex],
+      column,
+    };
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Render a power entity editor row
+   */
+  private _renderPowerEntityEditor(entityId: string, index: number) {
+    return html`
+      <div class="power-entity-row">
+        <ha-entity-picker
+          .hass=${this.hass}
+          .value=${entityId}
+          .label=${'Power Entity ${index + 1}'}
+          .includeDomains=${['sensor']}
+          @value-changed=${(e: CustomEvent) => this._powerEntityChanged(e.detail.value, index)}
+          allow-custom-entity
+        ></ha-entity-picker>
+        <mwc-icon-button @click=${() => this._removePowerEntity(index)}>
+          <ha-icon icon=${ICONS.delete}></ha-icon>
+        </mwc-icon-button>
+      </div>
+    `;
+  }
+
+  /**
+   * Add a new power entity
+   */
+  private _addPowerEntity(): void {
+    const powerEntities = [...(this._config.power_entities ?? []), ''];
+    this._config = {
+      ...this._config,
+      power_entities: powerEntities,
+    };
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Remove a power entity
+   */
+  private _removePowerEntity(index: number): void {
+    const powerEntities = [...(this._config.power_entities ?? [])];
+    powerEntities.splice(index, 1);
+    this._config = {
+      ...this._config,
+      power_entities: powerEntities.length > 0 ? powerEntities : undefined,
+    };
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Handle power entity value change
+   */
+  private _powerEntityChanged(value: string, index: number): void {
+    const powerEntities = [...(this._config.power_entities ?? [])];
+    powerEntities[index] = value;
+    
+    // Filter out empty strings
+    const filteredEntities = powerEntities.filter(e => e);
+    
+    this._config = {
+      ...this._config,
+      power_entities: filteredEntities.length > 0 ? filteredEntities : undefined,
+    };
+    this._fireConfigChanged();
   }
 }
 

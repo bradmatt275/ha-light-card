@@ -176,6 +176,13 @@ export class LightsRoomCard extends LitElement implements LovelaceCard {
     if (!this._config?.rooms) return [];
 
     const entities: string[] = [];
+    
+    // Add custom power entities if configured
+    if (this._config.power_entities) {
+      entities.push(...this._config.power_entities);
+    }
+
+    // Add all light and power entities from rooms
     for (const room of this._config.rooms) {
       for (const light of room.lights) {
         entities.push(light.entity);
@@ -223,9 +230,30 @@ export class LightsRoomCard extends LitElement implements LovelaceCard {
   }
 
   /**
-   * Calculate total power consumption across all rooms
+   * Calculate total power consumption
+   * Uses power_entities if configured, otherwise falls back to summing individual light power_entity values
    */
   private _calculateTotalPower(): number | null {
+    // First, check if custom power_entities are configured
+    if (this._config.power_entities && this._config.power_entities.length > 0) {
+      let total = 0;
+      let hasAnyPower = false;
+
+      for (const entityId of this._config.power_entities) {
+        const powerState = this.hass.states[entityId] as HassEntity | undefined;
+        if (powerState && powerState.state !== 'unavailable' && powerState.state !== 'unknown') {
+          const value = parseFloat(powerState.state);
+          if (!isNaN(value)) {
+            total += value;
+            hasAnyPower = true;
+          }
+        }
+      }
+
+      return hasAnyPower ? total : null;
+    }
+
+    // Fallback: calculate from individual light power_entity values
     if (!this._config?.rooms) return null;
 
     let total = 0;
@@ -324,26 +352,80 @@ export class LightsRoomCard extends LitElement implements LovelaceCard {
       `;
     }
 
+    const columns = this._config.columns ?? 1;
+
+    // Single column layout (default)
+    if (columns <= 1) {
+      return html`
+        <div class="rooms-container">
+          ${this._config.rooms.map(
+            (room, index) => html`
+              <room-section
+                .hass=${this.hass}
+                .config=${room}
+                .collapsed=${this._collapsedRooms.has(room.name)}
+                .expandedLights=${this._expandedLights}
+                .scenesMap=${this._scenesMap}
+                .activeScenes=${this._activeScenes}
+                @room-collapse-toggle=${this._handleRoomCollapseToggle}
+                @light-expand-toggle=${this._handleLightExpandToggle}
+                @scene-activated=${this._handleSceneActivated}
+              ></room-section>
+              ${index < this._config.rooms.length - 1
+                ? html`<div class="room-divider"></div>`
+                : nothing}
+            `
+          )}
+        </div>
+      `;
+    }
+
+    // Multi-column layout
+    // Group rooms by their assigned column
+    const columnGroups: Map<number, typeof this._config.rooms> = new Map();
+    
+    // Initialize columns
+    for (let i = 1; i <= columns; i++) {
+      columnGroups.set(i, []);
+    }
+
+    // Assign rooms to columns
+    this._config.rooms.forEach((room) => {
+      const targetColumn = room.column ?? 1;
+      // Clamp to valid column range
+      const clampedColumn = Math.max(1, Math.min(columns, targetColumn));
+      const columnRooms = columnGroups.get(clampedColumn) ?? [];
+      columnRooms.push(room);
+      columnGroups.set(clampedColumn, columnRooms);
+    });
+
     return html`
-      <div class="rooms-container">
-        ${this._config.rooms.map(
-          (room, index) => html`
-            <room-section
-              .hass=${this.hass}
-              .config=${room}
-              .collapsed=${this._collapsedRooms.has(room.name)}
-              .expandedLights=${this._expandedLights}
-              .scenesMap=${this._scenesMap}
-              .activeScenes=${this._activeScenes}
-              @room-collapse-toggle=${this._handleRoomCollapseToggle}
-              @light-expand-toggle=${this._handleLightExpandToggle}
-              @scene-activated=${this._handleSceneActivated}
-            ></room-section>
-            ${index < this._config.rooms.length - 1
-              ? html`<div class="room-divider"></div>`
-              : nothing}
-          `
-        )}
+      <div class="rooms-container columns-${columns}">
+        ${Array.from({ length: columns }, (_, i) => i + 1).map((columnNum) => {
+          const columnRooms = columnGroups.get(columnNum) ?? [];
+          return html`
+            <div class="column">
+              ${columnRooms.map(
+                (room, index) => html`
+                  <room-section
+                    .hass=${this.hass}
+                    .config=${room}
+                    .collapsed=${this._collapsedRooms.has(room.name)}
+                    .expandedLights=${this._expandedLights}
+                    .scenesMap=${this._scenesMap}
+                    .activeScenes=${this._activeScenes}
+                    @room-collapse-toggle=${this._handleRoomCollapseToggle}
+                    @light-expand-toggle=${this._handleLightExpandToggle}
+                    @scene-activated=${this._handleSceneActivated}
+                  ></room-section>
+                  ${index < columnRooms.length - 1
+                    ? html`<div class="room-divider"></div>`
+                    : nothing}
+                `
+              )}
+            </div>
+          `;
+        })}
       </div>
     `;
   }

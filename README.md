@@ -8,10 +8,11 @@ A Home Assistant custom Lovelace card for managing lights grouped by user-define
 ## Features
 
 - **Dynamic room grouping** - Create unlimited rooms and assign lights to them
+- **Multi-column layout** - Configure 1-4 columns with room assignment, responsive on mobile
 - **Dual light type support** - Basic switches and Hue smart lights with different control options
 - **Scene integration** - Automatic discovery of Hue scenes via Home Assistant's WebSocket API
 - **Visual scene feedback** - Active scenes are reflected through color accents on light rows
-- **Power monitoring** - Optional per-light and per-room power consumption display
+- **Power monitoring** - Optional per-light, per-room, or custom entity power consumption display
 - **Collapsible sections** - Rooms can be expanded/collapsed to manage screen space
 - **Material You design** - Follows Material You design principles for a modern look
 
@@ -55,8 +56,13 @@ rooms:
 type: custom:lights-room-card
 title: Lights
 show_total_power: true
+columns: 2
+power_entities:
+  - sensor.lights_circuit_1_power
+  - sensor.lights_circuit_2_power
 rooms:
   - name: Living Room
+    column: 1
     lights:
       - entity: light.living_room_ceiling
         type: hue
@@ -68,6 +74,7 @@ rooms:
         power_entity: sensor.table_lamp_power
 
   - name: Master Bedroom
+    column: 1
     lights:
       - entity: light.bedroom_ceiling
         type: hue
@@ -80,6 +87,7 @@ rooms:
         power_entity: sensor.wardrobe_power
 
   - name: Kitchen
+    column: 2
     collapsed: true
     lights:
       - entity: switch.kitchen_main
@@ -89,6 +97,7 @@ rooms:
         type: switch
 
   - name: Theatre Room
+    column: 2
     lights:
       - entity: light.theatre_ceiling
         type: hue
@@ -106,6 +115,8 @@ rooms:
 | `type` | string | Yes | - | Must be `custom:lights-room-card` |
 | `title` | string | No | `"Lights"` | Card header title |
 | `show_total_power` | boolean | No | `true` | Show sum of all power entities in header |
+| `columns` | number | No | `1` | Number of columns (1-4), responsive on smaller screens |
+| `power_entities` | array | No | - | Array of sensor entity IDs for total power calculation |
 | `rooms` | array | Yes | - | Array of room configurations |
 
 ### Room Options
@@ -114,6 +125,7 @@ rooms:
 |--------|------|----------|---------|-------------|
 | `name` | string | Yes | - | Display name for the room |
 | `collapsed` | boolean | No | `false` | Whether room starts collapsed |
+| `column` | number | No | `1` | Which column to place this room in (1-based) |
 | `lights` | array | Yes | - | Array of light configurations |
 
 ### Light Options
@@ -124,6 +136,25 @@ rooms:
 | `type` | string | Yes | - | Light type: `"hue"` or `"switch"` |
 | `power_entity` | string | No | - | Power sensor entity ID (`sensor.*`) |
 | `name` | string | No | Entity's friendly_name | Override display name |
+
+## Multi-Column Layout
+
+When `columns` is set to 2, 3, or 4, rooms are displayed in a grid layout. Each room can be assigned to a specific column using the `column` property.
+
+The layout is responsive:
+- **Desktop (>1200px)**: Shows all configured columns
+- **Tablet (900-1200px)**: Max 3 columns
+- **Small tablet (600-900px)**: Max 2 columns
+- **Mobile (<600px)**: Single column
+
+## Power Monitoring
+
+You can track power consumption in two ways:
+
+1. **Individual light power entities**: Set `power_entity` on each light to track per-light consumption
+2. **Custom power entities**: Set `power_entities` at the card level for circuit-level monitoring (e.g., Shelly EM)
+
+If `power_entities` is configured, it takes precedence over summing individual light values.
 
 ## Light Types
 
