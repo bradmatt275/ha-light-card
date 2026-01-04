@@ -269,6 +269,86 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
   }
 
   /**
+   * Add a power entity to a light
+   */
+  private _addLightPowerEntity(roomIndex: number, lightIndex: number): void {
+    const rooms = [...(this._config.rooms ?? [])];
+    const lights = [...rooms[roomIndex].lights];
+    const powerEntities = [...(lights[lightIndex].power_entities ?? []), ''];
+
+    lights[lightIndex] = {
+      ...lights[lightIndex],
+      power_entities: powerEntities,
+    };
+
+    rooms[roomIndex] = {
+      ...rooms[roomIndex],
+      lights,
+    };
+
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Remove a power entity from a light
+   */
+  private _removeLightPowerEntity(roomIndex: number, lightIndex: number, powerIndex: number): void {
+    const rooms = [...(this._config.rooms ?? [])];
+    const lights = [...rooms[roomIndex].lights];
+    const powerEntities = [...(lights[lightIndex].power_entities ?? [])];
+    powerEntities.splice(powerIndex, 1);
+
+    lights[lightIndex] = {
+      ...lights[lightIndex],
+      power_entities: powerEntities.length > 0 ? powerEntities : undefined,
+    };
+
+    rooms[roomIndex] = {
+      ...rooms[roomIndex],
+      lights,
+    };
+
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Update a power entity value for a light
+   */
+  private _lightPowerEntityChanged(value: string, roomIndex: number, lightIndex: number, powerIndex: number): void {
+    const rooms = [...(this._config.rooms ?? [])];
+    const lights = [...rooms[roomIndex].lights];
+    const powerEntities = [...(lights[lightIndex].power_entities ?? [])];
+    powerEntities[powerIndex] = value;
+
+    lights[lightIndex] = {
+      ...lights[lightIndex],
+      power_entities: powerEntities,
+    };
+
+    rooms[roomIndex] = {
+      ...rooms[roomIndex],
+      lights,
+    };
+
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+
+    this._fireConfigChanged();
+  }
+
+  /**
    * Render a light editor
    */
   private _renderLightEditor(
@@ -334,14 +414,27 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
         </div>
 
         <div class="form-group">
-          <label>Power Entity (optional)</label>
-          <ha-selector
-            .hass=${this.hass}
-            .selector=${{ entity: { domain: ['sensor'] } }}
-            .value=${light.power_entity || ''}
-            @value-changed=${(e: CustomEvent) =>
-              this._lightValueChanged(e.detail.value || '', roomIndex, lightIndex, 'power_entity')}
-          ></ha-selector>
+          <label>Power Entities (optional)</label>
+          <div class="light-power-entities">
+            ${(light.power_entities ?? []).map((entityId, powerIndex) => html`
+              <div class="light-power-entity-row">
+                <ha-selector
+                  .hass=${this.hass}
+                  .selector=${{ entity: { domain: ['sensor'] } }}
+                  .value=${entityId || ''}
+                  @value-changed=${(e: CustomEvent) =>
+                    this._lightPowerEntityChanged(e.detail.value || '', roomIndex, lightIndex, powerIndex)}
+                ></ha-selector>
+                <mwc-icon-button @click=${() => this._removeLightPowerEntity(roomIndex, lightIndex, powerIndex)}>
+                  <ha-icon icon=${ICONS.delete}></ha-icon>
+                </mwc-icon-button>
+              </div>
+            `)}
+            <mwc-button @click=${() => this._addLightPowerEntity(roomIndex, lightIndex)}>
+              <ha-icon icon=${ICONS.add}></ha-icon>
+              Add Power Entity
+            </mwc-button>
+          </div>
         </div>
 
         <ha-textfield

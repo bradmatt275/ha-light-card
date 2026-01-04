@@ -37,13 +37,17 @@ export class RoomSection extends LitElement {
     let hasAnyPower = false;
 
     for (const light of this.config.lights) {
-      if (light.power_entity) {
-        const powerState = this.hass.states[light.power_entity] as HassEntity | undefined;
-        if (powerState && powerState.state !== 'unavailable') {
-          const value = parseFloat(powerState.state);
-          if (!isNaN(value)) {
-            total += value;
-            hasAnyPower = true;
+      // Support array of power entities
+      const powerEntities = light.power_entities ?? [];
+      for (const powerEntityId of powerEntities) {
+        if (powerEntityId) {
+          const powerState = this.hass.states[powerEntityId] as HassEntity | undefined;
+          if (powerState && powerState.state !== 'unavailable') {
+            const value = parseFloat(powerState.state);
+            if (!isNaN(value)) {
+              total += value;
+              hasAnyPower = true;
+            }
           }
         }
       }

@@ -186,8 +186,8 @@ export class LightsRoomCard extends LitElement implements LovelaceCard {
     for (const room of this._config.rooms) {
       for (const light of room.lights) {
         entities.push(light.entity);
-        if (light.power_entity) {
-          entities.push(light.power_entity);
+        if (light.power_entities) {
+          entities.push(...light.power_entities.filter(e => e));
         }
       }
     }
@@ -253,7 +253,7 @@ export class LightsRoomCard extends LitElement implements LovelaceCard {
       return hasAnyPower ? total : null;
     }
 
-    // Fallback: calculate from individual light power_entity values
+    // Fallback: calculate from individual light power_entities values
     if (!this._config?.rooms) return null;
 
     let total = 0;
@@ -261,13 +261,16 @@ export class LightsRoomCard extends LitElement implements LovelaceCard {
 
     for (const room of this._config.rooms) {
       for (const light of room.lights) {
-        if (light.power_entity) {
-          const powerState = this.hass.states[light.power_entity] as HassEntity | undefined;
-          if (powerState && powerState.state !== 'unavailable') {
-            const value = parseFloat(powerState.state);
-            if (!isNaN(value)) {
-              total += value;
-              hasAnyPower = true;
+        const powerEntities = light.power_entities ?? [];
+        for (const powerEntityId of powerEntities) {
+          if (powerEntityId) {
+            const powerState = this.hass.states[powerEntityId] as HassEntity | undefined;
+            if (powerState && powerState.state !== 'unavailable') {
+              const value = parseFloat(powerState.state);
+              if (!isNaN(value)) {
+                total += value;
+                hasAnyPower = true;
+              }
             }
           }
         }

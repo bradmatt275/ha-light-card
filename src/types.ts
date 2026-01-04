@@ -32,7 +32,7 @@ export interface RoomConfig {
 export interface LightConfig {
   entity: string;                    // light.* or switch.* entity ID
   type: 'hue' | 'switch';            // Determines available controls
-  power_entity?: string;             // Optional sensor.* for power monitoring
+  power_entities?: string[];         // Optional sensor.* entities for power monitoring
   name?: string;                     // Optional display name override
 }
 

@@ -722,6 +722,31 @@ export const editorStyles = css`
     display: block;
   }
 
+  /* Light power entities styles */
+  .light-power-entities {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .light-power-entity-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .light-power-entity-row ha-selector {
+    flex: 1;
+  }
+
+  .light-power-entity-row mwc-icon-button {
+    flex-shrink: 0;
+  }
+
+  .light-power-entities mwc-button {
+    align-self: flex-start;
+  }
+
   .no-lights-message,
   .no-rooms-message {
     font-size: 12px;

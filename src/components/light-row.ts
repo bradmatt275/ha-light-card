@@ -41,11 +41,29 @@ export class LightRow extends LitElement {
   }
 
   /**
-   * Get the power entity state if configured
+   * Get the total power from configured power entities
    */
-  private _getPowerState(): HassEntity | undefined {
-    if (!this.config.power_entity) return undefined;
-    return this.hass.states[this.config.power_entity] as HassEntity | undefined;
+  private _getTotalPower(): number | null {
+    const powerEntities = this.config.power_entities ?? [];
+    if (powerEntities.length === 0) return null;
+
+    let total = 0;
+    let hasAnyPower = false;
+
+    for (const entityId of powerEntities) {
+      if (entityId) {
+        const powerState = this.hass.states[entityId] as HassEntity | undefined;
+        if (powerState && powerState.state !== 'unavailable') {
+          const value = parseFloat(powerState.state);
+          if (!isNaN(value)) {
+            total += value;
+            hasAnyPower = true;
+          }
+        }
+      }
+    }
+
+    return hasAnyPower ? total : null;
   }
 
   /**
@@ -100,14 +118,10 @@ export class LightRow extends LitElement {
   }
 
   /**
-   * Get power value if available
+   * Get power value if available (sum of all configured power entities)
    */
   private _getPower(): number | null {
-    const powerState = this._getPowerState();
-    if (!powerState || powerState.state === 'unavailable') return null;
-
-    const value = parseFloat(powerState.state);
-    return isNaN(value) ? null : value;
+    return this._getTotalPower();
   }
 
   /**
