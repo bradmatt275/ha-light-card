@@ -328,19 +328,66 @@ export class LightsRoomCard extends LitElement implements LovelaceCard {
     const showPower = this._config.show_total_power ?? true;
     const totalPower = showPower ? this._calculateTotalPower() : null;
 
+    // Check if any lights are on
+    const anyLightsOn = this._areAnyLightsOn();
+
     return html`
       <div class="card-header">
         <h1 class="card-title">${title}</h1>
-        ${totalPower !== null
-          ? html`
-              <div class="total-power">
-                <ha-icon icon=${ICONS.power}></ha-icon>
-                <span>${Math.round(totalPower)} W</span>
-              </div>
-            `
-          : nothing}
+        <div class="header-actions">
+          ${anyLightsOn
+            ? html`
+                <mwc-icon-button
+                  class="turn-off-all-button"
+                  @click=${this._handleTurnOffAll}
+                  title="Turn off all lights"
+                >
+                  <ha-icon icon=${ICONS.lightOff}></ha-icon>
+                </mwc-icon-button>
+              `
+            : nothing}
+          ${totalPower !== null
+            ? html`
+                <div class="total-power">
+                  <ha-icon icon=${ICONS.power}></ha-icon>
+                  <span>${Math.round(totalPower)} W</span>
+                </div>
+              `
+            : nothing}
+        </div>
       </div>
     `;
+  }
+
+  /**
+   * Check if any lights are currently on
+   */
+  private _areAnyLightsOn(): boolean {
+    for (const room of this._config.rooms) {
+      for (const light of room.lights) {
+        const state = this.hass.states[light.entity];
+        if (state?.state === 'on') {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Turn off all lights
+   */
+  private _handleTurnOffAll(): void {
+    for (const room of this._config.rooms) {
+      for (const light of room.lights) {
+        const state = this.hass.states[light.entity];
+        if (state?.state === 'on') {
+          this.hass.callService('homeassistant', 'turn_off', {
+            entity_id: light.entity,
+          });
+        }
+      }
+    }
   }
 
   /**

@@ -87,6 +87,23 @@ export const cardStyles = css`
     margin: 0;
   }
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .turn-off-all-button {
+    --mdc-icon-button-size: 36px;
+    --mdc-icon-size: 20px;
+    color: var(--text-secondary);
+    transition: color var(--transition-fast);
+  }
+
+  .turn-off-all-button:hover {
+    color: var(--text-primary);
+  }
+
   .total-power {
     display: flex;
     align-items: center;
