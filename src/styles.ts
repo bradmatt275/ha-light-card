@@ -595,6 +595,36 @@ export const editorStyles = css`
     gap: var(--spacing-md);
   }
 
+  .light-editor-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .reorder-buttons {
+    display: flex;
+    gap: 0;
+  }
+
+  .reorder-buttons mwc-icon-button {
+    --mdc-icon-button-size: 32px;
+    --mdc-icon-size: 18px;
+  }
+
+  .reorder-buttons mwc-icon-button[disabled] {
+    opacity: 0.3;
+  }
+
+  .light-index {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+  }
+
   .form-group {
     display: flex;
     flex-direction: column;

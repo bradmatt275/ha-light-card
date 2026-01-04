@@ -150,7 +150,7 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
   private _addLight(roomIndex: number): void {
     const newLight: LightConfig = {
       entity: '',
-      type: 'hue',
+      type: 'switch',
     };
 
     const rooms = [...(this._config.rooms ?? [])];
@@ -174,6 +174,56 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
     const rooms = [...(this._config.rooms ?? [])];
     const lights = [...rooms[roomIndex].lights];
     lights.splice(lightIndex, 1);
+
+    rooms[roomIndex] = {
+      ...rooms[roomIndex],
+      lights,
+    };
+
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Move a light up in the list
+   */
+  private _moveLightUp(roomIndex: number, lightIndex: number): void {
+    if (lightIndex === 0) return;
+
+    const rooms = [...(this._config.rooms ?? [])];
+    const lights = [...rooms[roomIndex].lights];
+    
+    // Swap with previous item
+    [lights[lightIndex - 1], lights[lightIndex]] = [lights[lightIndex], lights[lightIndex - 1]];
+
+    rooms[roomIndex] = {
+      ...rooms[roomIndex],
+      lights,
+    };
+
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Move a light down in the list
+   */
+  private _moveLightDown(roomIndex: number, lightIndex: number): void {
+    const rooms = [...(this._config.rooms ?? [])];
+    const lights = [...rooms[roomIndex].lights];
+    
+    if (lightIndex >= lights.length - 1) return;
+
+    // Swap with next item
+    [lights[lightIndex], lights[lightIndex + 1]] = [lights[lightIndex + 1], lights[lightIndex]];
 
     rooms[roomIndex] = {
       ...rooms[roomIndex],
@@ -224,10 +274,34 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
   private _renderLightEditor(
     light: LightConfig,
     roomIndex: number,
-    lightIndex: number
+    lightIndex: number,
+    totalLights: number
   ) {
+    const isFirst = lightIndex === 0;
+    const isLast = lightIndex === totalLights - 1;
+
     return html`
       <div class="light-editor">
+        <div class="light-editor-header">
+          <div class="reorder-buttons">
+            <mwc-icon-button
+              .disabled=${isFirst}
+              @click=${() => this._moveLightUp(roomIndex, lightIndex)}
+              title="Move up"
+            >
+              <ha-icon icon="mdi:arrow-up"></ha-icon>
+            </mwc-icon-button>
+            <mwc-icon-button
+              .disabled=${isLast}
+              @click=${() => this._moveLightDown(roomIndex, lightIndex)}
+              title="Move down"
+            >
+              <ha-icon icon="mdi:arrow-down"></ha-icon>
+            </mwc-icon-button>
+          </div>
+          <span class="light-index">#${lightIndex + 1}</span>
+        </div>
+
         <div class="form-group">
           <label>Entity</label>
           <ha-selector
@@ -350,7 +424,7 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
                 </div>
 
                 ${room.lights?.map((light, lightIndex) =>
-                  this._renderLightEditor(light, roomIndex, lightIndex)
+                  this._renderLightEditor(light, roomIndex, lightIndex, room.lights.length)
                 )}
 
                 ${room.lights?.length === 0
