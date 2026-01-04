@@ -82,6 +82,7 @@ function extractSceneName(fullName: string, areaId: string | null): string {
 
 /**
  * Discover scenes for a light entity using the search/related API
+ * Deduplicates scenes by name since the same scene can appear for multiple devices
  */
 export async function discoverScenesForLight(
   hass: HomeAssistant,
@@ -96,22 +97,34 @@ export async function discoverScenesForLight(
   // Get all scenes in that area
   const sceneEntityIds = await client.getAreaScenes(areaId);
 
-  // Convert to SceneInfo objects
-  return sceneEntityIds.map((sceneId) => {
+  // Convert to SceneInfo objects and deduplicate by scene name
+  const seenNames = new Set<string>();
+  const scenes: SceneInfo[] = [];
+
+  for (const sceneId of sceneEntityIds) {
     const sceneState = hass.states[sceneId] as HassEntity | undefined;
     const fullName = sceneState?.attributes?.friendly_name ?? sceneId.split('.')[1] ?? sceneId;
+    const sceneName = extractSceneName(fullName, areaId);
+    
+    // Skip if we've already seen this scene name (dedup)
+    if (seenNames.has(sceneName.toLowerCase())) {
+      continue;
+    }
+    seenNames.add(sceneName.toLowerCase());
     
     // Get entity_picture for Hue scenes (used for color extraction)
     const entityPicture = sceneState?.attributes?.entity_picture as string | undefined;
     
-    return {
+    scenes.push({
       entity_id: sceneId,
-      name: extractSceneName(fullName, areaId),
+      name: sceneName,
       color: extractSceneColor(hass, sceneId) ?? undefined,
       entity_picture: entityPicture,
       is_active: false,
-    };
-  });
+    });
+  }
+
+  return scenes;
 }
 
 /**
