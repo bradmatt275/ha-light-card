@@ -595,6 +595,25 @@ export const editorStyles = css`
     gap: var(--spacing-md);
   }
 
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-group label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .form-group ha-selector {
+    display: block;
+    width: 100%;
+  }
+
   .type-selection {
     display: flex;
     align-items: center;

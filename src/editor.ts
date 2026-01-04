@@ -228,15 +228,16 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
   ) {
     return html`
       <div class="light-editor">
-        <ha-entity-picker
-          .hass=${this.hass}
-          .value=${light.entity}
-          .label=${'Entity'}
-          .includeDomains=${['light', 'switch']}
-          @value-changed=${(e: CustomEvent) =>
-            this._lightValueChanged(e.detail.value, roomIndex, lightIndex, 'entity')}
-          allow-custom-entity
-        ></ha-entity-picker>
+        <div class="form-group">
+          <label>Entity</label>
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${{ entity: { domain: ['light', 'switch'] } }}
+            .value=${light.entity || ''}
+            @value-changed=${(e: CustomEvent) =>
+              this._lightValueChanged(e.detail.value || '', roomIndex, lightIndex, 'entity')}
+          ></ha-selector>
+        </div>
 
         <div class="type-selection">
           <label>Type</label>
@@ -258,15 +259,16 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
           </ha-formfield>
         </div>
 
-        <ha-entity-picker
-          .hass=${this.hass}
-          .value=${light.power_entity ?? ''}
-          .label=${'Power Entity (optional)'}
-          .includeDomains=${['sensor']}
-          @value-changed=${(e: CustomEvent) =>
-            this._lightValueChanged(e.detail.value, roomIndex, lightIndex, 'power_entity')}
-          allow-custom-entity
-        ></ha-entity-picker>
+        <div class="form-group">
+          <label>Power Entity (optional)</label>
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${{ entity: { domain: ['sensor'] } }}
+            .value=${light.power_entity || ''}
+            @value-changed=${(e: CustomEvent) =>
+              this._lightValueChanged(e.detail.value || '', roomIndex, lightIndex, 'power_entity')}
+          ></ha-selector>
+        </div>
 
         <ha-textfield
           label="Name Override (optional)"
@@ -476,14 +478,15 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
   private _renderPowerEntityEditor(entityId: string, index: number) {
     return html`
       <div class="power-entity-row">
-        <ha-entity-picker
-          .hass=${this.hass}
-          .value=${entityId}
-          .label=${`Power Entity ${index + 1}`}
-          .includeDomains=${['sensor']}
-          @value-changed=${(e: CustomEvent) => this._powerEntityChanged(e.detail.value, index)}
-          allow-custom-entity
-        ></ha-entity-picker>
+        <div class="form-group" style="flex: 1;">
+          <label>Power Entity ${index + 1}</label>
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${{ entity: { domain: ['sensor'] } }}
+            .value=${entityId || ''}
+            @value-changed=${(e: CustomEvent) => this._powerEntityChanged(e.detail.value || '', index)}
+          ></ha-selector>
+        </div>
         <mwc-icon-button @click=${() => this._removePowerEntity(index)}>
           <ha-icon icon=${ICONS.delete}></ha-icon>
         </mwc-icon-button>
