@@ -389,21 +389,19 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
           <span class="section-title">LAYOUT</span>
         </div>
 
-        <div class="columns-selector">
-          <label>Number of Columns</label>
-          <div class="column-buttons">
-            ${[1, 2, 3, 4].map(
-              (num) => html`
-                <mwc-button
-                  class="column-button ${columns === num ? 'active' : ''}"
-                  @click=${() => this._setColumns(num)}
-                >
-                  ${num}
-                </mwc-button>
-              `
-            )}
-          </div>
-        </div>
+        <ha-select
+          label="Number of Columns"
+          .value=${String(columns)}
+          @selected=${this._columnsChanged}
+          @closed=${(e: Event) => e.stopPropagation()}
+          fixedMenuPosition
+        >
+          ${[1, 2, 3, 4].map(
+            (num) => html`
+              <mwc-list-item .value=${String(num)}>${num}</mwc-list-item>
+            `
+          )}
+        </ha-select>
 
         <div class="section-header">
           <span class="section-title">POWER ENTITIES (Optional)</span>
@@ -442,14 +440,18 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
   }
 
   /**
-   * Set the number of columns
+   * Handle columns dropdown change
    */
-  private _setColumns(num: number): void {
-    this._config = {
-      ...this._config,
-      columns: num,
-    };
-    this._fireConfigChanged();
+  private _columnsChanged(e: CustomEvent): void {
+    const value = (e.target as HTMLSelectElement).value;
+    const num = parseInt(value, 10);
+    if (!isNaN(num) && num >= 1 && num <= 4) {
+      this._config = {
+        ...this._config,
+        columns: num,
+      };
+      this._fireConfigChanged();
+    }
   }
 
   /**
@@ -477,7 +479,7 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
         <ha-entity-picker
           .hass=${this.hass}
           .value=${entityId}
-          .label=${'Power Entity ${index + 1}'}
+          .label=${`Power Entity ${index + 1}`}
           .includeDomains=${['sensor']}
           @value-changed=${(e: CustomEvent) => this._powerEntityChanged(e.detail.value, index)}
           allow-custom-entity

@@ -463,7 +463,7 @@ export const expandedPanelStyles = css`
 `;
 
 /**
- * Scene chip styles
+ * Scene chip styles - simplified without color swatches
  */
 export const sceneChipStyles = css`
   ${cssVariables}
@@ -490,31 +490,11 @@ export const sceneChipStyles = css`
     background: rgba(var(--accent-color-rgb, 3, 169, 244), 0.15);
   }
 
-  .scene-color-swatch {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    flex-shrink: 0;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .scene-color-swatch .scene-picture {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-
   .scene-chip-name {
     font-size: 11px;
     font-weight: 500;
     color: var(--text-primary);
-    max-width: 80px;
+    max-width: 100px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -641,15 +621,13 @@ export const editorStyles = css`
     --mdc-icon-size: 20px;
   }
 
-  /* Column selector styles */
-  .columns-selector,
+  /* Column assignment styles for room editor */
   .column-assignment {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
   }
 
-  .columns-selector label,
   .column-assignment label {
     font-size: 12px;
     color: var(--text-secondary);
@@ -668,6 +646,10 @@ export const editorStyles = css`
   .column-button.active {
     --mdc-theme-primary: var(--accent-color);
     background: rgba(var(--accent-color-rgb, 3, 169, 244), 0.1);
+  }
+
+  ha-select {
+    width: 100%;
   }
 
   /* Power entities styles */
