@@ -470,6 +470,7 @@ export const expandedPanelStyles = css`
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
   }
 
   .no-scenes-message {
