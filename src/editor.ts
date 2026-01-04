@@ -523,12 +523,9 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
     const powerEntities = [...(this._config.power_entities ?? [])];
     powerEntities[index] = value;
     
-    // Filter out empty strings
-    const filteredEntities = powerEntities.filter(e => e);
-    
     this._config = {
       ...this._config,
-      power_entities: filteredEntities.length > 0 ? filteredEntities : undefined,
+      power_entities: powerEntities,
     };
     this._fireConfigChanged();
   }

@@ -1,16 +1,15 @@
 # Dependencies
 node_modules/
 
-# Build output (keep lights-room-card.js for releases)
-dist/*.d.ts
-dist/components/
-dist/utils/
+# Build output
+dist/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
@@ -20,9 +19,12 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# Test coverage
-coverage/
+# TypeScript cache
+*.tsbuildinfo
 
-# Temporary files
-*.tmp
-*.temp
+# Optional npm cache
+.npm
+
+# Environment
+.env
+.env.local

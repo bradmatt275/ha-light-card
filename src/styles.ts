@@ -664,10 +664,13 @@ export const editorStyles = css`
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
+    width: 100%;
   }
 
   .power-entity-row ha-entity-picker {
     flex: 1;
+    min-width: 0;
+    display: block;
   }
 
   .no-lights-message,
