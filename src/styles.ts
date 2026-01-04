@@ -558,12 +558,17 @@ export const editorStyles = css`
     align-items: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-md);
+    padding-left: var(--spacing-sm);
     background: var(--row-background);
     cursor: pointer;
   }
 
   .room-editor-header:hover {
     background: var(--row-background-hover);
+  }
+
+  .room-editor-header .reorder-buttons {
+    margin-right: var(--spacing-xs);
   }
 
   .room-name {

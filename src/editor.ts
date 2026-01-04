@@ -120,6 +120,70 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
   }
 
   /**
+   * Move a room up in the list
+   */
+  private _moveRoomUp(roomIndex: number): void {
+    if (roomIndex === 0) return;
+
+    const rooms = [...(this._config.rooms ?? [])];
+    
+    // Swap with previous item
+    [rooms[roomIndex - 1], rooms[roomIndex]] = [rooms[roomIndex], rooms[roomIndex - 1]];
+
+    // Update expanded rooms indices
+    const newExpanded = new Set<number>();
+    for (const index of this._expandedRooms) {
+      if (index === roomIndex) {
+        newExpanded.add(roomIndex - 1);
+      } else if (index === roomIndex - 1) {
+        newExpanded.add(roomIndex);
+      } else {
+        newExpanded.add(index);
+      }
+    }
+    this._expandedRooms = newExpanded;
+
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Move a room down in the list
+   */
+  private _moveRoomDown(roomIndex: number): void {
+    const rooms = [...(this._config.rooms ?? [])];
+    
+    if (roomIndex >= rooms.length - 1) return;
+
+    // Swap with next item
+    [rooms[roomIndex], rooms[roomIndex + 1]] = [rooms[roomIndex + 1], rooms[roomIndex]];
+
+    // Update expanded rooms indices
+    const newExpanded = new Set<number>();
+    for (const index of this._expandedRooms) {
+      if (index === roomIndex) {
+        newExpanded.add(roomIndex + 1);
+      } else if (index === roomIndex + 1) {
+        newExpanded.add(roomIndex);
+      } else {
+        newExpanded.add(index);
+      }
+    }
+    this._expandedRooms = newExpanded;
+
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+
+    this._fireConfigChanged();
+  }
+
+  /**
    * Handle room property change
    */
   private _roomValueChanged(e: Event, roomIndex: number, key: keyof RoomConfig): void {
@@ -459,12 +523,30 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
   /**
    * Render a room editor
    */
-  private _renderRoomEditor(room: RoomConfig, roomIndex: number) {
+  private _renderRoomEditor(room: RoomConfig, roomIndex: number, totalRooms: number) {
     const isExpanded = this._expandedRooms.has(roomIndex);
+    const isFirst = roomIndex === 0;
+    const isLast = roomIndex === totalRooms - 1;
 
     return html`
       <div class="room-editor">
         <div class="room-editor-header" @click=${() => this._toggleRoomExpanded(roomIndex)}>
+          <div class="reorder-buttons" @click=${(e: Event) => e.stopPropagation()}>
+            <mwc-icon-button
+              .disabled=${isFirst}
+              @click=${() => this._moveRoomUp(roomIndex)}
+              title="Move up"
+            >
+              <ha-icon icon="mdi:arrow-up"></ha-icon>
+            </mwc-icon-button>
+            <mwc-icon-button
+              .disabled=${isLast}
+              @click=${() => this._moveRoomDown(roomIndex)}
+              title="Move down"
+            >
+              <ha-icon icon="mdi:arrow-down"></ha-icon>
+            </mwc-icon-button>
+          </div>
           <ha-icon icon=${isExpanded ? ICONS.chevronDown : ICONS.chevronRight}></ha-icon>
           <span class="room-name">${room.name || 'Unnamed Room'}</span>
           <mwc-icon-button @click=${(e: Event) => this._deleteRoom(e, roomIndex)}>
@@ -598,7 +680,7 @@ export class LightsRoomCardEditor extends LitElement implements LovelaceCardEdit
         </div>
 
         ${this._config.rooms?.map((room, roomIndex) =>
-          this._renderRoomEditor(room, roomIndex)
+          this._renderRoomEditor(room, roomIndex, this._config.rooms?.length ?? 0)
         )}
 
         ${!this._config.rooms || this._config.rooms.length === 0
