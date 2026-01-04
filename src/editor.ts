@@ -1,0 +1,390 @@
+import { LitElement, html, css, CSSResultGroup, nothing } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
+import { LightsRoomCardConfig, RoomConfig, LightConfig } from './types';
+import { editorStyles } from './styles';
+import { ICONS } from './const';
+
+/**
+ * Visual editor for the Lights Room Card
+ */
+@customElement('lights-room-card-editor')
+export class LightsRoomCardEditor extends LitElement implements LovelaceCardEditor {
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @state() private _config!: LightsRoomCardConfig;
+  @state() private _expandedRooms: Set<number> = new Set([0]);
+
+  static get styles(): CSSResultGroup {
+    return [
+      editorStyles,
+      css`
+        :host {
+          display: block;
+        }
+      `,
+    ];
+  }
+
+  public setConfig(config: LightsRoomCardConfig): void {
+    this._config = config;
+  }
+
+  /**
+   * Fire config changed event
+   */
+  private _fireConfigChanged(): void {
+    fireEvent(this, 'config-changed', { config: this._config });
+  }
+
+  /**
+   * Handle value change for card-level properties
+   */
+  private _valueChanged(e: Event): void {
+    const target = e.target as HTMLInputElement;
+    const configValue = target.getAttribute('data-config-value') || target.getAttribute('configValue');
+
+    if (!configValue) return;
+
+    let value: string | boolean = target.value;
+    if (target.type === 'checkbox') {
+      value = target.checked;
+    }
+
+    this._config = {
+      ...this._config,
+      [configValue]: value,
+    };
+
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Toggle a room's expanded state in the editor
+   */
+  private _toggleRoomExpanded(roomIndex: number): void {
+    const newExpanded = new Set(this._expandedRooms);
+    if (newExpanded.has(roomIndex)) {
+      newExpanded.delete(roomIndex);
+    } else {
+      newExpanded.add(roomIndex);
+    }
+    this._expandedRooms = newExpanded;
+  }
+
+  /**
+   * Add a new room
+   */
+  private _addRoom(): void {
+    const newRoom: RoomConfig = {
+      name: `Room ${(this._config.rooms?.length ?? 0) + 1}`,
+      lights: [],
+    };
+
+    this._config = {
+      ...this._config,
+      rooms: [...(this._config.rooms ?? []), newRoom],
+    };
+
+    // Expand the new room
+    this._expandedRooms = new Set([...this._expandedRooms, this._config.rooms.length - 1]);
+
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Delete a room
+   */
+  private _deleteRoom(e: Event, roomIndex: number): void {
+    e.stopPropagation();
+
+    const rooms = [...(this._config.rooms ?? [])];
+    rooms.splice(roomIndex, 1);
+
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+
+    // Update expanded rooms indices
+    const newExpanded = new Set<number>();
+    for (const index of this._expandedRooms) {
+      if (index < roomIndex) {
+        newExpanded.add(index);
+      } else if (index > roomIndex) {
+        newExpanded.add(index - 1);
+      }
+    }
+    this._expandedRooms = newExpanded;
+
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Handle room property change
+   */
+  private _roomValueChanged(e: Event, roomIndex: number, key: keyof RoomConfig): void {
+    const target = e.target as HTMLInputElement;
+    let value: string | boolean = target.value;
+
+    if (target.type === 'checkbox') {
+      value = target.checked;
+    }
+
+    const rooms = [...(this._config.rooms ?? [])];
+    rooms[roomIndex] = {
+      ...rooms[roomIndex],
+      [key]: value,
+    };
+
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Add a new light to a room
+   */
+  private _addLight(roomIndex: number): void {
+    const newLight: LightConfig = {
+      entity: '',
+      type: 'hue',
+    };
+
+    const rooms = [...(this._config.rooms ?? [])];
+    rooms[roomIndex] = {
+      ...rooms[roomIndex],
+      lights: [...rooms[roomIndex].lights, newLight],
+    };
+
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Remove a light from a room
+   */
+  private _removeLight(roomIndex: number, lightIndex: number): void {
+    const rooms = [...(this._config.rooms ?? [])];
+    const lights = [...rooms[roomIndex].lights];
+    lights.splice(lightIndex, 1);
+
+    rooms[roomIndex] = {
+      ...rooms[roomIndex],
+      lights,
+    };
+
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Handle light property change
+   */
+  private _lightValueChanged(
+    value: string,
+    roomIndex: number,
+    lightIndex: number,
+    key: keyof LightConfig
+  ): void {
+    const rooms = [...(this._config.rooms ?? [])];
+    const lights = [...rooms[roomIndex].lights];
+
+    lights[lightIndex] = {
+      ...lights[lightIndex],
+      [key]: value || undefined, // Remove empty strings
+    };
+
+    rooms[roomIndex] = {
+      ...rooms[roomIndex],
+      lights,
+    };
+
+    this._config = {
+      ...this._config,
+      rooms,
+    };
+
+    this._fireConfigChanged();
+  }
+
+  /**
+   * Render a light editor
+   */
+  private _renderLightEditor(
+    light: LightConfig,
+    roomIndex: number,
+    lightIndex: number
+  ) {
+    return html`
+      <div class="light-editor">
+        <ha-entity-picker
+          .hass=${this.hass}
+          .value=${light.entity}
+          .label=${'Entity'}
+          .includeDomains=${['light', 'switch']}
+          @value-changed=${(e: CustomEvent) =>
+            this._lightValueChanged(e.detail.value, roomIndex, lightIndex, 'entity')}
+          allow-custom-entity
+        ></ha-entity-picker>
+
+        <div class="type-selection">
+          <label>Type</label>
+          <ha-formfield label="Hue">
+            <ha-radio
+              name="type-${roomIndex}-${lightIndex}"
+              .checked=${light.type === 'hue'}
+              @change=${() =>
+                this._lightValueChanged('hue', roomIndex, lightIndex, 'type')}
+            ></ha-radio>
+          </ha-formfield>
+          <ha-formfield label="Switch">
+            <ha-radio
+              name="type-${roomIndex}-${lightIndex}"
+              .checked=${light.type === 'switch'}
+              @change=${() =>
+                this._lightValueChanged('switch', roomIndex, lightIndex, 'type')}
+            ></ha-radio>
+          </ha-formfield>
+        </div>
+
+        <ha-entity-picker
+          .hass=${this.hass}
+          .value=${light.power_entity ?? ''}
+          .label=${'Power Entity (optional)'}
+          .includeDomains=${['sensor']}
+          @value-changed=${(e: CustomEvent) =>
+            this._lightValueChanged(e.detail.value, roomIndex, lightIndex, 'power_entity')}
+          allow-custom-entity
+        ></ha-entity-picker>
+
+        <ha-textfield
+          label="Name Override (optional)"
+          .value=${light.name ?? ''}
+          @input=${(e: Event) =>
+            this._lightValueChanged(
+              (e.target as HTMLInputElement).value,
+              roomIndex,
+              lightIndex,
+              'name'
+            )}
+        ></ha-textfield>
+
+        <mwc-button class="remove-button" @click=${() => this._removeLight(roomIndex, lightIndex)}>
+          Remove
+        </mwc-button>
+      </div>
+    `;
+  }
+
+  /**
+   * Render a room editor
+   */
+  private _renderRoomEditor(room: RoomConfig, roomIndex: number) {
+    const isExpanded = this._expandedRooms.has(roomIndex);
+
+    return html`
+      <div class="room-editor">
+        <div class="room-editor-header" @click=${() => this._toggleRoomExpanded(roomIndex)}>
+          <ha-icon icon=${isExpanded ? ICONS.chevronDown : ICONS.chevronRight}></ha-icon>
+          <span class="room-name">${room.name || 'Unnamed Room'}</span>
+          <mwc-icon-button @click=${(e: Event) => this._deleteRoom(e, roomIndex)}>
+            <ha-icon icon=${ICONS.delete}></ha-icon>
+          </mwc-icon-button>
+        </div>
+
+        ${isExpanded
+          ? html`
+              <div class="room-editor-content">
+                <ha-textfield
+                  label="Room Name"
+                  .value=${room.name}
+                  @input=${(e: Event) => this._roomValueChanged(e, roomIndex, 'name')}
+                ></ha-textfield>
+
+                <ha-formfield label="Start collapsed">
+                  <ha-switch
+                    .checked=${room.collapsed ?? false}
+                    @change=${(e: Event) => this._roomValueChanged(e, roomIndex, 'collapsed')}
+                  ></ha-switch>
+                </ha-formfield>
+
+                <div class="lights-header">
+                  <span class="section-title">LIGHTS</span>
+                  <mwc-button @click=${() => this._addLight(roomIndex)}>
+                    <ha-icon icon=${ICONS.add}></ha-icon>
+                    Add Light
+                  </mwc-button>
+                </div>
+
+                ${room.lights?.map((light, lightIndex) =>
+                  this._renderLightEditor(light, roomIndex, lightIndex)
+                )}
+
+                ${room.lights?.length === 0
+                  ? html`<div class="no-lights-message">No lights added yet</div>`
+                  : nothing}
+              </div>
+            `
+          : nothing}
+      </div>
+    `;
+  }
+
+  protected render() {
+    if (!this.hass || !this._config) {
+      return html``;
+    }
+
+    return html`
+      <div class="card-config">
+        <ha-textfield
+          label="Title"
+          .value=${this._config.title ?? 'Lights'}
+          data-config-value="title"
+          @input=${this._valueChanged}
+        ></ha-textfield>
+
+        <ha-formfield label="Show total power consumption">
+          <ha-switch
+            .checked=${this._config.show_total_power ?? true}
+            data-config-value="show_total_power"
+            @change=${this._valueChanged}
+          ></ha-switch>
+        </ha-formfield>
+
+        <div class="section-header">
+          <span class="section-title">ROOMS</span>
+          <mwc-button @click=${this._addRoom}>
+            <ha-icon icon=${ICONS.add}></ha-icon>
+            Add Room
+          </mwc-button>
+        </div>
+
+        ${this._config.rooms?.map((room, roomIndex) =>
+          this._renderRoomEditor(room, roomIndex)
+        )}
+
+        ${!this._config.rooms || this._config.rooms.length === 0
+          ? html`<div class="no-rooms-message">No rooms configured yet</div>`
+          : nothing}
+      </div>
+    `;
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'lights-room-card-editor': LightsRoomCardEditor;
+  }
+}
