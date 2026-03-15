@@ -1,6 +1,6 @@
 import { LitElement, html, css, CSSResultGroup, PropertyValues, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
+import { HomeAssistant, LovelaceCard, LovelaceCardEditor, forwardHaptic } from 'custom-card-helpers';
 import { LightsRoomCardConfig, SceneInfo, HassEntity, LightConfig } from './types';
 import { cardStyles, roomStyles } from './styles';
 import { CARD_NAME, CARD_VERSION, DEFAULT_CONFIG, ICONS } from './const';
@@ -378,6 +378,7 @@ export class LightsRoomCard extends LitElement implements LovelaceCard {
    * Turn off all lights
    */
   private _handleTurnOffAll(): void {
+    forwardHaptic('medium');
     for (const room of this._config.rooms) {
       for (const light of room.lights) {
         const state = this.hass.states[light.entity];
