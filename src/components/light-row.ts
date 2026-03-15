@@ -1,6 +1,6 @@
 import { LitElement, html, css, CSSResultGroup, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import { HomeAssistant, forwardHaptic } from 'custom-card-helpers';
 import { LightConfig, SceneInfo, HassEntity } from '../types';
 import { lightRowStyles, expandedPanelStyles } from '../styles';
 import { ICONS } from '../const';
@@ -157,6 +157,7 @@ export class LightRow extends LitElement {
    */
   private _handleToggle(e: Event): void {
     e.stopPropagation();
+    forwardHaptic('light');
 
     const wasOff = !this._isOn();
 
@@ -178,6 +179,7 @@ export class LightRow extends LitElement {
    */
   private _handleExpandClick(e: Event): void {
     e.stopPropagation();
+    forwardHaptic('selection');
     this.dispatchEvent(
       new CustomEvent('expand-toggle', {
         detail: { entityId: this.config.entity },
@@ -202,6 +204,7 @@ export class LightRow extends LitElement {
    * Handle scene activation
    */
   private _handleSceneActivate(e: CustomEvent): void {
+    forwardHaptic('medium');
     const sceneId = e.detail.sceneId;
     this.hass.callService('scene', 'turn_on', {
       entity_id: sceneId,

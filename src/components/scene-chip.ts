@@ -1,5 +1,6 @@
 import { LitElement, html, css, CSSResultGroup, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { forwardHaptic } from 'custom-card-helpers';
 import { SceneInfo } from '../types';
 import { sceneChipStyles } from '../styles';
 import { ICONS } from '../const';
@@ -26,6 +27,7 @@ export class SceneChip extends LitElement {
 
   private _handleClick(e: Event): void {
     e.stopPropagation();
+    forwardHaptic('medium');
     this.dispatchEvent(
       new CustomEvent('scene-activate', {
         detail: { sceneId: this.scene.entity_id },

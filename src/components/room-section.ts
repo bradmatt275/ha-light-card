@@ -1,6 +1,6 @@
 import { LitElement, html, css, CSSResultGroup } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import { HomeAssistant, forwardHaptic } from 'custom-card-helpers';
 import { RoomConfig, SceneInfo, HassEntity } from '../types';
 import { roomStyles } from '../styles';
 import { ICONS } from '../const';
@@ -60,6 +60,7 @@ export class RoomSection extends LitElement {
    * Handle room header click to toggle collapse
    */
   private _handleHeaderClick(): void {
+    forwardHaptic('selection');
     this.dispatchEvent(
       new CustomEvent('room-collapse-toggle', {
         detail: { roomName: this.config.name },
